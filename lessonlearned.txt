@@ -1,0 +1,15 @@
+1. We cannot pass non file param to map of variables.
+Didn't work:
+curl --location --request POST 'http://localhost:8080/query' \
+--form 'operations="{ \"query\": \"mutation($title: String! $image: Upload! $additionalInfo: String! $description: String!) { createProject(input: { title: $title image: $image additionalInfo: $additionalInfo description: $description } ) { title }}\", \"variables\": { \"title\" : null, \"image\" : null, \"additionalInfo\": null, \"description\": null } }"' \
+--form 'map="{\"0\": [\"variables.image\"],\"1\": [\"variables.image\"],\"2\": [\"variables.additionalInfo\"],\"3\": [\"variables.description\"]}"' \
+--form '0="Wakwaw"' \
+--form '1=@"/Users/fa-15506/Documents/output.jpg"' \
+--form '2="hehe"' \
+--form '3="hehehhe"'
+
+Work:
+curl --location --request POST 'http://localhost:8080/query' \
+--form 'operations="{ \"query\": \"mutation($title: String! $image: Upload! $additionalInfo: String! $description: String!) { createProject(input: { title: $title image: $image additionalInfo: $additionalInfo description: $description } ) { title }}\", \"variables\": { \"title\" : \"angjay\", \"image\" : null, \"additionalInfo\": \"wawa\", \"description\": \"hehe\" } }"' \
+--form 'map="{\"0\": [\"variables.image\"]}"' \
+--form '0=@"/Users/fa-15506/Documents/output.jpg"'

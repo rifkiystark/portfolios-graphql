@@ -105,7 +105,6 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (*model
 	projectModel.FillModelByDBEntity(project)
 
 	return &projectModel, nil
-
 }
 
 // Project is the resolver for the project field.

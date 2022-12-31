@@ -12,9 +12,9 @@ func (cp *CreateProject) ToProjectEntity() database.Project {
 	}
 }
 
-func (cp *Project) FillModelByDBEntity(dp database.Project) {
-	cp.Title = dp.Title
-	cp.AdditionalInfo = dp.AdditionalInfo
-	cp.Description = dp.Description
-	cp.ImageURL = dp.ImageURL
+func (p *Project) FillModelByDBEntity(dp database.Project) {
+	p.Title = dp.Title
+	p.AdditionalInfo = dp.AdditionalInfo
+	p.Description = dp.Description
+	p.ImageURL = dp.ImageURL
 }

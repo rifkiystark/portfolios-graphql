@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/rifkiystark/portfolios-api/graph/model"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -48,7 +48,7 @@ func Connect(dbHost string, dbName string) *DB {
 	}
 }
 
-func (db *DB) CreateProject(project model.Project) (*model.Project, error) {
+func (db *DB) CreateProject(project *Project) error {
 	projectCollections := db.client.Database(db.databaseName).Collection("projects")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -58,39 +58,57 @@ func (db *DB) CreateProject(project model.Project) (*model.Project, error) {
 
 	if err != nil {
 		log.Printf("Error: %v", err)
-		return nil, err
+		return err
 	}
-
-	insertedID := result.InsertedID.(primitive.ObjectID).Hex()
-	project.ID = insertedID
-
-	return &project, nil
+	project.ID = result.InsertedID.(primitive.ObjectID)
+	return nil
 }
 
-func (db *DB) UpdateProject(id string, project model.Project) (*model.Project, error) {
+func (db *DB) UpdateProject(id string, project *Project) error {
 	projectCollections := db.client.Database(db.databaseName).Collection("projects")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	objectId, _ := primitive.ObjectIDFromHex(id)
-	updateProject := bson.D{{"$set", Project{Title: project.Title, ImageURL: project.ImageURL, AdditionalInfo: project.AdditionalInfo, Description: project.Description}}}
+	// updateProject := bson.D{{"$set", Project{Title: project.Title, ImageURL: project.ImageURL, AdditionalInfo: project.AdditionalInfo, Description: project.Description}}}
+	updateProject := bson.D{{"$set", project}}
 	_, err := projectCollections.UpdateByID(ctx, objectId, updateProject)
 
 	if err != nil {
 		log.Printf("error UpdateByID: %v", err)
-		return nil, err
+		return err
 	}
 
-	project.ID = id
+	project.ID = objectId
 
-	return &project, nil
+	return nil
 }
 
-func (db *DB) FindProjectById(id string) (*model.Project, error) {
+func (db *DB) DeleteProject(id string) (bool, error) {
+
+	movieColl := db.client.Database(db.databaseName).Collection("projects")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	ObjectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return false, err
+	}
+	res, err := movieColl.DeleteOne(ctx, bson.M{"_id": ObjectID})
+	if err != nil {
+		fmt.Printf("error DeleteOne: %v", err)
+		return false, err
+	}
+
+	return res.DeletedCount == 1, nil
+}
+
+func (db *DB) FindProjectById(id string) (Project, error) {
 	ObjectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		fmt.Printf("Error: %v", err)
-		return nil, err
+		return Project{}, err
 	}
 
 	movieColl := db.client.Database(db.databaseName).Collection("projects")
@@ -98,14 +116,14 @@ func (db *DB) FindProjectById(id string) (*model.Project, error) {
 	defer cancel()
 	res := movieColl.FindOne(ctx, bson.M{"_id": ObjectID})
 
-	movie := model.Project{ID: id}
+	project := Project{}
 
-	res.Decode(&movie)
+	res.Decode(&project)
 
-	return &movie, nil
+	return project, nil
 }
 
-func (db *DB) AllProjects(search *string) ([]*model.Project, error) {
+func (db *DB) AllProjects(search *string) ([]Project, error) {
 	movieColl := db.client.Database(db.databaseName).Collection("projects")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -121,18 +139,11 @@ func (db *DB) AllProjects(search *string) ([]*model.Project, error) {
 		return nil, err
 	}
 
-	var projects []*model.Project
-	for cur.Next(ctx) {
-		var result Project
-		err := cur.Decode(&result)
-		if err != nil {
-			fmt.Printf("error decoding cursor: %v", err)
-			return nil, err
-		}
-
-		project := model.Project{ID: result.ID.Hex(), Title: result.Title, ImageURL: result.ImageURL, AdditionalInfo: result.AdditionalInfo, Description: result.Description}
-
-		projects = append(projects, &project)
+	var projects []Project
+	err = cur.All(ctx, &projects)
+	if err != nil {
+		logrus.Errorf("error decoding document: %+v", err)
+		return nil, err
 	}
 
 	return projects, nil

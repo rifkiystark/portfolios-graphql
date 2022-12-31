@@ -9,7 +9,9 @@ import (
 	"fmt"
 
 	"github.com/imagekit-developer/imagekit-go/api/uploader"
+	"github.com/rifkiystark/portfolios-api/database"
 	"github.com/rifkiystark/portfolios-api/graph/model"
+	"github.com/sirupsen/logrus"
 )
 
 // CreateProject is the resolver for the createProject field.
@@ -22,14 +24,21 @@ func (r *mutationResolver) CreateProject(ctx context.Context, input model.Create
 		return nil, err
 	}
 
-	newProject := model.Project{
-		Title:          input.Title,
-		ImageURL:       resp.Data.Url,
-		AdditionalInfo: input.AdditionalInfo,
-		Description:    input.Description,
+	logrus.Infof("imagekit response: %+v", resp)
+
+	newProject := input.ToProjectEntity()
+	newProject.ImageURL = resp.Data.Url
+
+	err = r.DB.CreateProject(&newProject)
+	if err != nil {
+		logrus.Errorf("error creating project: %v", err)
+		return nil, err
 	}
 
-	return r.DB.CreateProject(newProject)
+	project := model.Project{}
+	project.FillModelByDBEntity(newProject)
+
+	return &project, nil
 }
 
 // UpdateProject is the resolver for the updateProject field.
@@ -38,7 +47,7 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		return nil, fmt.Errorf("No input provided")
 	}
 
-	updateProject := model.Project{}
+	updateProject := database.Project{}
 
 	if input.Title != nil {
 		updateProject.Title = *input.Title
@@ -62,17 +71,72 @@ func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input m
 		updateProject.ImageURL = resp.Data.Url
 	}
 
-	return r.DB.UpdateProject(id, updateProject)
+	r.DB.UpdateProject(id, &updateProject)
+
+	project := model.Project{}
+	project.FillModelByDBEntity(updateProject)
+
+	return &project, nil
+}
+
+// DeleteProject is the resolver for the deleteProject field.
+func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (*model.Project, error) {
+	project, err := r.DB.FindProjectById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	logrus.Infof("project: %+v", project)
+	deleted, err := r.DB.DeleteProject(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if deleted {
+		ikFileId := project.ImageURL[len("https://ik.imagekit.io/4ynvfo9vu/"):len(project.ImageURL)]
+		_, err := r.IK.Media.DeleteFile(ctx, ikFileId)
+		logrus.Info("ikFileId: ", ikFileId)
+		if err != nil {
+			logrus.Error(err)
+		}
+	}
+
+	projectModel := model.Project{}
+	projectModel.FillModelByDBEntity(project)
+
+	return &projectModel, nil
+
 }
 
 // Project is the resolver for the project field.
 func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
-	return r.DB.FindProjectById(id)
+	project, err := r.DB.FindProjectById(id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	projectModel := model.Project{}
+	projectModel.FillModelByDBEntity(project)
+
+	return &projectModel, nil
 }
 
 // Projects is the resolver for the projects field.
 func (r *queryResolver) Projects(ctx context.Context, search *string) ([]*model.Project, error) {
-	return r.DB.AllProjects(search)
+	projects, err := r.DB.AllProjects(search)
+	if err != nil {
+		return nil, err
+	}
+
+	var projectsModel []*model.Project
+
+	for _, project := range projects {
+		projectModel := model.Project{}
+		projectModel.FillModelByDBEntity(project)
+		projectsModel = append(projectsModel, &projectModel)
+	}
+	return projectsModel, nil
 }
 
 // Mutation returns MutationResolver implementation.

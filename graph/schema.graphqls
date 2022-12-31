@@ -29,6 +29,7 @@ type Project {
 type Mutation {
     createProject(input: CreateProject!): Project!
     updateProject(id: String!, input: UpdateProject!): Project!
+    deleteProject(id: String!): Project!
 }
 
 type Query {

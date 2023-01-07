@@ -90,8 +90,8 @@ func (p *CertificateServiceImpl) GetCertificates(ctx context.Context, search *st
 	}
 
 	var certificates []*CertificateResponse
-	for _, projectEntity := range certificateEntities {
-		projectModel := projectEntity.ToResponse()
+	for _, certificateEntity := range certificateEntities {
+		projectModel := certificateEntity.ToResponse()
 		certificates = append(certificates, &projectModel)
 	}
 

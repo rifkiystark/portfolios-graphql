@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -10,7 +11,7 @@ type Config struct {
 	HTTPPort string `envconfig:"HTTP_PORT" default:"8080"`
 
 	// DB is the database configuration
-	MongoDBHost     string `envconfig:"MONGODB_HOST" default:"localhost"`
+	MongoDBHost     string `envconfig:"MONGODB_HOST" default:""`
 	MongoDBUser     string `envconfig:"MONGODB_USER" default:""`
 	MongoDBPassword string `envconfig:"MONGODB_PASSWORD" default:""`
 	MongoDBName     string `envconfig:"MONGODB_NAME" default:"portfolios"`
@@ -22,6 +23,7 @@ type Config struct {
 }
 
 func Get() *Config {
+	godotenv.Load()
 	var C Config
 	envconfig.MustProcess("", &C)
 	return &C

@@ -4,21 +4,21 @@
 
 scalar Upload
 
-input CreateProject {
+input CreateProjectRequest {
     title: String!
     image: Upload!
     additionalInfo: [String!]!
     description: String!
 }
 
-input UpdateProject {
+input UpdateProjectRequest {
     title: String
     image: Upload
     additionalInfo: [String!]
     description: String
 }
 
-type Project {
+type ProjectResponse {
     id: String!
     title: String!
     imageUrl: String!
@@ -26,13 +26,39 @@ type Project {
     description: String!
 }
 
+input CreateIPRRequest {
+    title: String!
+    publishedAt: String!
+    description: String!
+}
+
+input UpdateIPRRequest {
+    title: String!
+    publishedAt: String!
+    description: String!
+}
+
+type IPRResponse {
+    id: String!
+    title: String!
+    publishedAt: String!
+    description: String!
+}
+
 type Mutation {
-    createProject(input: CreateProject!): Project!
-    updateProject(id: String!, input: UpdateProject!): Project!
-    deleteProject(id: String!): Project!
+    createProject(input: CreateProjectRequest!): ProjectResponse!
+    updateProject(id: String!, input: UpdateProjectRequest!): ProjectResponse!
+    deleteProject(id: String!): ProjectResponse!
+
+    createIPR(input: CreateIPRRequest!): IPRResponse!
+    updateIPR(id: String!, input: UpdateIPRRequest!): IPRResponse!
+    deleteIPR(id: String!): IPRResponse!
 }
 
 type Query {
-    project(id: String!): Project!
-    projects(search: String): [Project!]!
+    project(id: String!): ProjectResponse!
+    projects(search: String): [ProjectResponse!]!
+
+    ipr(id: String!): IPRResponse!
+    iprs(search: String): [IPRResponse!]!
 }

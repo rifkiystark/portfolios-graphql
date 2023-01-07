@@ -8,134 +8,58 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/imagekit-developer/imagekit-go/api/uploader"
-	"github.com/rifkiystark/portfolios-api/database"
+	"github.com/rifkiystark/portfolios-api/cmd/project"
 	"github.com/rifkiystark/portfolios-api/graph/model"
-	"github.com/sirupsen/logrus"
 )
 
 // CreateProject is the resolver for the createProject field.
-func (r *mutationResolver) CreateProject(ctx context.Context, input model.CreateProject) (*model.Project, error) {
-	resp, err := r.IK.Uploader.Upload(ctx, input.Image.File, uploader.UploadParam{
-		FileName: input.Image.Filename,
-	})
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		return nil, err
-	}
-
-	logrus.Infof("imagekit response: %+v", resp)
-
-	newProject := input.ToProjectEntity()
-	newProject.ImageURL = resp.Data.Url
-
-	err = r.DB.CreateProject(&newProject)
-	if err != nil {
-		logrus.Errorf("error creating project: %v", err)
-		return nil, err
-	}
-
-	project := model.Project{}
-	project.FillModelByDBEntity(newProject)
-
-	return &project, nil
+func (r *mutationResolver) CreateProject(ctx context.Context, input project.CreateProjectRequest) (*project.ProjectResponse, error) {
+	return r.ProjectService.CreateProject(ctx, input)
 }
 
 // UpdateProject is the resolver for the updateProject field.
-func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input model.UpdateProject) (*model.Project, error) {
-	if input.AdditionalInfo == nil && input.Description == nil && input.Image == nil && input.Title == nil {
-		return nil, fmt.Errorf("No input provided")
-	}
-
-	updateProject := database.Project{}
-
-	if input.Title != nil {
-		updateProject.Title = *input.Title
-	}
-
-	if input.Description != nil {
-		updateProject.Description = *input.Description
-	}
-
-	if input.AdditionalInfo != nil {
-		updateProject.AdditionalInfo = input.AdditionalInfo
-	}
-	if input.Image != nil {
-		resp, err := r.IK.Uploader.Upload(ctx, input.Image.File, uploader.UploadParam{
-			FileName: input.Image.Filename,
-		})
-		if err != nil {
-			fmt.Printf("Error: %v", err)
-			return nil, err
-		}
-		updateProject.ImageURL = resp.Data.Url
-	}
-
-	r.DB.UpdateProject(id, &updateProject)
-
-	project := model.Project{}
-	project.FillModelByDBEntity(updateProject)
-
-	return &project, nil
+func (r *mutationResolver) UpdateProject(ctx context.Context, id string, input project.UpdateProjectRequest) (*project.ProjectResponse, error) {
+	return r.ProjectService.UpdateProject(ctx, id, input)
 }
 
 // DeleteProject is the resolver for the deleteProject field.
-func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (*model.Project, error) {
-	project, err := r.DB.FindProjectById(id)
-	if err != nil {
-		return nil, err
-	}
+func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (*project.ProjectResponse, error) {
+	return r.ProjectService.DeleteProject(ctx, id)
+}
 
-	logrus.Infof("project: %+v", project)
-	deleted, err := r.DB.DeleteProject(id)
-	if err != nil {
-		return nil, err
-	}
+// CreateIPR is the resolver for the createIPR field.
+func (r *mutationResolver) CreateIPR(ctx context.Context, input model.CreateIPRRequest) (*model.IPRResponse, error) {
+	panic(fmt.Errorf("not implemented: CreateIPR - createIPR"))
+}
 
-	if deleted {
-		ikFileId := project.ImageURL[len("https://ik.imagekit.io/4ynvfo9vu/"):len(project.ImageURL)]
-		_, err := r.IK.Media.DeleteFile(ctx, ikFileId)
-		logrus.Info("ikFileId: ", ikFileId)
-		if err != nil {
-			logrus.Error(err)
-		}
-	}
+// UpdateIPR is the resolver for the updateIPR field.
+func (r *mutationResolver) UpdateIPR(ctx context.Context, id string, input model.UpdateIPRRequest) (*model.IPRResponse, error) {
+	panic(fmt.Errorf("not implemented: UpdateIPR - updateIPR"))
+}
 
-	projectModel := model.Project{}
-	projectModel.FillModelByDBEntity(project)
-
-	return &projectModel, nil
+// DeleteIPR is the resolver for the deleteIPR field.
+func (r *mutationResolver) DeleteIPR(ctx context.Context, id string) (*model.IPRResponse, error) {
+	panic(fmt.Errorf("not implemented: DeleteIPR - deleteIPR"))
 }
 
 // Project is the resolver for the project field.
-func (r *queryResolver) Project(ctx context.Context, id string) (*model.Project, error) {
-	project, err := r.DB.FindProjectById(id)
-
-	if err != nil {
-		return nil, err
-	}
-
-	projectModel := model.Project{}
-	projectModel.FillModelByDBEntity(project)
-
-	return &projectModel, nil
+func (r *queryResolver) Project(ctx context.Context, id string) (*project.ProjectResponse, error) {
+	return r.ProjectService.GetProject(ctx, id)
 }
 
 // Projects is the resolver for the projects field.
-func (r *queryResolver) Projects(ctx context.Context, search *string) ([]*model.Project, error) {
-	projects, err := r.DB.AllProjects(search)
-	if err != nil {
-		return nil, err
-	}
+func (r *queryResolver) Projects(ctx context.Context, search *string) ([]*project.ProjectResponse, error) {
+	return r.ProjectService.GetProjects(ctx, search)
+}
 
-	var projectsModel []*model.Project
+// Ipr is the resolver for the ipr field.
+func (r *queryResolver) Ipr(ctx context.Context, id string) (*model.IPRResponse, error) {
+	panic(fmt.Errorf("not implemented: Ipr - ipr"))
+}
 
-	for _, project := range projects {
-		projectModel := model.Project{}
-		projectModel.FillModelByDBEntity(project)
-		projectsModel = append(projectsModel, &projectModel)
-	}
-	return projectsModel, nil
+// Iprs is the resolver for the iprs field.
+func (r *queryResolver) Iprs(ctx context.Context, search *string) ([]*model.IPRResponse, error) {
+	panic(fmt.Errorf("not implemented: Iprs - iprs"))
 }
 
 // Mutation returns MutationResolver implementation.

@@ -2,28 +2,21 @@
 
 package model
 
-import (
-	"github.com/99designs/gqlgen/graphql"
-)
-
-type CreateProject struct {
-	Title          string         `json:"title"`
-	Image          graphql.Upload `json:"image"`
-	AdditionalInfo []string       `json:"additionalInfo"`
-	Description    string         `json:"description"`
+type CreateIPRRequest struct {
+	Title       string `json:"title"`
+	PublishedAt string `json:"publishedAt"`
+	Description string `json:"description"`
 }
 
-type Project struct {
-	ID             string   `json:"id"`
-	Title          string   `json:"title"`
-	ImageURL       string   `json:"imageUrl"`
-	AdditionalInfo []string `json:"additionalInfo"`
-	Description    string   `json:"description"`
+type IPRResponse struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	PublishedAt string `json:"publishedAt"`
+	Description string `json:"description"`
 }
 
-type UpdateProject struct {
-	Title          *string         `json:"title"`
-	Image          *graphql.Upload `json:"image"`
-	AdditionalInfo []string        `json:"additionalInfo"`
-	Description    *string         `json:"description"`
+type UpdateIPRRequest struct {
+	Title       string `json:"title"`
+	PublishedAt string `json:"publishedAt"`
+	Description string `json:"description"`
 }

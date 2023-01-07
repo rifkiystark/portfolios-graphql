@@ -14,6 +14,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/rifkiystark/portfolios-api/cmd/project"
 	"github.com/rifkiystark/portfolios-api/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -45,13 +46,23 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
-	Mutation struct {
-		CreateProject func(childComplexity int, input model.CreateProject) int
-		DeleteProject func(childComplexity int, id string) int
-		UpdateProject func(childComplexity int, id string, input model.UpdateProject) int
+	IPRResponse struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		PublishedAt func(childComplexity int) int
+		Title       func(childComplexity int) int
 	}
 
-	Project struct {
+	Mutation struct {
+		CreateIPR     func(childComplexity int, input model.CreateIPRRequest) int
+		CreateProject func(childComplexity int, input project.CreateProjectRequest) int
+		DeleteIPR     func(childComplexity int, id string) int
+		DeleteProject func(childComplexity int, id string) int
+		UpdateIPR     func(childComplexity int, id string, input model.UpdateIPRRequest) int
+		UpdateProject func(childComplexity int, id string, input project.UpdateProjectRequest) int
+	}
+
+	ProjectResponse struct {
 		AdditionalInfo func(childComplexity int) int
 		Description    func(childComplexity int) int
 		ID             func(childComplexity int) int
@@ -60,19 +71,26 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Ipr      func(childComplexity int, id string) int
+		Iprs     func(childComplexity int, search *string) int
 		Project  func(childComplexity int, id string) int
 		Projects func(childComplexity int, search *string) int
 	}
 }
 
 type MutationResolver interface {
-	CreateProject(ctx context.Context, input model.CreateProject) (*model.Project, error)
-	UpdateProject(ctx context.Context, id string, input model.UpdateProject) (*model.Project, error)
-	DeleteProject(ctx context.Context, id string) (*model.Project, error)
+	CreateProject(ctx context.Context, input project.CreateProjectRequest) (*project.ProjectResponse, error)
+	UpdateProject(ctx context.Context, id string, input project.UpdateProjectRequest) (*project.ProjectResponse, error)
+	DeleteProject(ctx context.Context, id string) (*project.ProjectResponse, error)
+	CreateIPR(ctx context.Context, input model.CreateIPRRequest) (*model.IPRResponse, error)
+	UpdateIPR(ctx context.Context, id string, input model.UpdateIPRRequest) (*model.IPRResponse, error)
+	DeleteIPR(ctx context.Context, id string) (*model.IPRResponse, error)
 }
 type QueryResolver interface {
-	Project(ctx context.Context, id string) (*model.Project, error)
-	Projects(ctx context.Context, search *string) ([]*model.Project, error)
+	Project(ctx context.Context, id string) (*project.ProjectResponse, error)
+	Projects(ctx context.Context, search *string) ([]*project.ProjectResponse, error)
+	Ipr(ctx context.Context, id string) (*model.IPRResponse, error)
+	Iprs(ctx context.Context, search *string) ([]*model.IPRResponse, error)
 }
 
 type executableSchema struct {
@@ -90,6 +108,46 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "IPRResponse.description":
+		if e.complexity.IPRResponse.Description == nil {
+			break
+		}
+
+		return e.complexity.IPRResponse.Description(childComplexity), true
+
+	case "IPRResponse.id":
+		if e.complexity.IPRResponse.ID == nil {
+			break
+		}
+
+		return e.complexity.IPRResponse.ID(childComplexity), true
+
+	case "IPRResponse.publishedAt":
+		if e.complexity.IPRResponse.PublishedAt == nil {
+			break
+		}
+
+		return e.complexity.IPRResponse.PublishedAt(childComplexity), true
+
+	case "IPRResponse.title":
+		if e.complexity.IPRResponse.Title == nil {
+			break
+		}
+
+		return e.complexity.IPRResponse.Title(childComplexity), true
+
+	case "Mutation.createIPR":
+		if e.complexity.Mutation.CreateIPR == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createIPR_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateIPR(childComplexity, args["input"].(model.CreateIPRRequest)), true
+
 	case "Mutation.createProject":
 		if e.complexity.Mutation.CreateProject == nil {
 			break
@@ -100,7 +158,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateProject(childComplexity, args["input"].(model.CreateProject)), true
+		return e.complexity.Mutation.CreateProject(childComplexity, args["input"].(project.CreateProjectRequest)), true
+
+	case "Mutation.deleteIPR":
+		if e.complexity.Mutation.DeleteIPR == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteIPR_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteIPR(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deleteProject":
 		if e.complexity.Mutation.DeleteProject == nil {
@@ -114,6 +184,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteProject(childComplexity, args["id"].(string)), true
 
+	case "Mutation.updateIPR":
+		if e.complexity.Mutation.UpdateIPR == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateIPR_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateIPR(childComplexity, args["id"].(string), args["input"].(model.UpdateIPRRequest)), true
+
 	case "Mutation.updateProject":
 		if e.complexity.Mutation.UpdateProject == nil {
 			break
@@ -124,42 +206,66 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateProject(childComplexity, args["id"].(string), args["input"].(model.UpdateProject)), true
+		return e.complexity.Mutation.UpdateProject(childComplexity, args["id"].(string), args["input"].(project.UpdateProjectRequest)), true
 
-	case "Project.additionalInfo":
-		if e.complexity.Project.AdditionalInfo == nil {
+	case "ProjectResponse.additionalInfo":
+		if e.complexity.ProjectResponse.AdditionalInfo == nil {
 			break
 		}
 
-		return e.complexity.Project.AdditionalInfo(childComplexity), true
+		return e.complexity.ProjectResponse.AdditionalInfo(childComplexity), true
 
-	case "Project.description":
-		if e.complexity.Project.Description == nil {
+	case "ProjectResponse.description":
+		if e.complexity.ProjectResponse.Description == nil {
 			break
 		}
 
-		return e.complexity.Project.Description(childComplexity), true
+		return e.complexity.ProjectResponse.Description(childComplexity), true
 
-	case "Project.id":
-		if e.complexity.Project.ID == nil {
+	case "ProjectResponse.id":
+		if e.complexity.ProjectResponse.ID == nil {
 			break
 		}
 
-		return e.complexity.Project.ID(childComplexity), true
+		return e.complexity.ProjectResponse.ID(childComplexity), true
 
-	case "Project.imageUrl":
-		if e.complexity.Project.ImageURL == nil {
+	case "ProjectResponse.imageUrl":
+		if e.complexity.ProjectResponse.ImageURL == nil {
 			break
 		}
 
-		return e.complexity.Project.ImageURL(childComplexity), true
+		return e.complexity.ProjectResponse.ImageURL(childComplexity), true
 
-	case "Project.title":
-		if e.complexity.Project.Title == nil {
+	case "ProjectResponse.title":
+		if e.complexity.ProjectResponse.Title == nil {
 			break
 		}
 
-		return e.complexity.Project.Title(childComplexity), true
+		return e.complexity.ProjectResponse.Title(childComplexity), true
+
+	case "Query.ipr":
+		if e.complexity.Query.Ipr == nil {
+			break
+		}
+
+		args, err := ec.field_Query_ipr_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Ipr(childComplexity, args["id"].(string)), true
+
+	case "Query.iprs":
+		if e.complexity.Query.Iprs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_iprs_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Iprs(childComplexity, args["search"].(*string)), true
 
 	case "Query.project":
 		if e.complexity.Query.Project == nil {
@@ -193,8 +299,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputCreateProject,
-		ec.unmarshalInputUpdateProject,
+		ec.unmarshalInputCreateIPRRequest,
+		ec.unmarshalInputCreateProjectRequest,
+		ec.unmarshalInputUpdateIPRRequest,
+		ec.unmarshalInputUpdateProjectRequest,
 	)
 	first := true
 
@@ -274,18 +382,48 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_createProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createIPR_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.CreateProject
+	var arg0 model.CreateIPRRequest
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNCreateProject2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐCreateProject(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateIPRRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐCreateIPRRequest(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 project.CreateProjectRequest
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateProjectRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐCreateProjectRequest(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteIPR_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -304,6 +442,30 @@ func (ec *executionContext) field_Mutation_deleteProject_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateIPR_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 model.UpdateIPRRequest
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNUpdateIPRRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐUpdateIPRRequest(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -316,10 +478,10 @@ func (ec *executionContext) field_Mutation_updateProject_args(ctx context.Contex
 		}
 	}
 	args["id"] = arg0
-	var arg1 model.UpdateProject
+	var arg1 project.UpdateProjectRequest
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNUpdateProject2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐUpdateProject(ctx, tmp)
+		arg1, err = ec.unmarshalNUpdateProjectRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐUpdateProjectRequest(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -340,6 +502,36 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_ipr_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_iprs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *string
+	if tmp, ok := rawArgs["search"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["search"] = arg0
 	return args, nil
 }
 
@@ -411,6 +603,182 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _IPRResponse_id(ctx context.Context, field graphql.CollectedField, obj *model.IPRResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IPRResponse_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IPRResponse_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IPRResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IPRResponse_title(ctx context.Context, field graphql.CollectedField, obj *model.IPRResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IPRResponse_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IPRResponse_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IPRResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IPRResponse_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.IPRResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IPRResponse_publishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PublishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IPRResponse_publishedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IPRResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IPRResponse_description(ctx context.Context, field graphql.CollectedField, obj *model.IPRResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IPRResponse_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IPRResponse_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IPRResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createProject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createProject(ctx, field)
 	if err != nil {
@@ -425,7 +793,7 @@ func (ec *executionContext) _Mutation_createProject(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateProject(rctx, fc.Args["input"].(model.CreateProject))
+		return ec.resolvers.Mutation().CreateProject(rctx, fc.Args["input"].(project.CreateProjectRequest))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -437,9 +805,9 @@ func (ec *executionContext) _Mutation_createProject(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Project)
+	res := resTmp.(*project.ProjectResponse)
 	fc.Result = res
-	return ec.marshalNProject2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProject(ctx, field.Selections, res)
+	return ec.marshalNProjectResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -451,17 +819,17 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
+				return ec.fieldContext_ProjectResponse_id(ctx, field)
 			case "title":
-				return ec.fieldContext_Project_title(ctx, field)
+				return ec.fieldContext_ProjectResponse_title(ctx, field)
 			case "imageUrl":
-				return ec.fieldContext_Project_imageUrl(ctx, field)
+				return ec.fieldContext_ProjectResponse_imageUrl(ctx, field)
 			case "additionalInfo":
-				return ec.fieldContext_Project_additionalInfo(ctx, field)
+				return ec.fieldContext_ProjectResponse_additionalInfo(ctx, field)
 			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
+				return ec.fieldContext_ProjectResponse_description(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ProjectResponse", field.Name)
 		},
 	}
 	defer func() {
@@ -492,7 +860,7 @@ func (ec *executionContext) _Mutation_updateProject(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateProject(rctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateProject))
+		return ec.resolvers.Mutation().UpdateProject(rctx, fc.Args["id"].(string), fc.Args["input"].(project.UpdateProjectRequest))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -504,9 +872,9 @@ func (ec *executionContext) _Mutation_updateProject(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Project)
+	res := resTmp.(*project.ProjectResponse)
 	fc.Result = res
-	return ec.marshalNProject2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProject(ctx, field.Selections, res)
+	return ec.marshalNProjectResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -518,17 +886,17 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
+				return ec.fieldContext_ProjectResponse_id(ctx, field)
 			case "title":
-				return ec.fieldContext_Project_title(ctx, field)
+				return ec.fieldContext_ProjectResponse_title(ctx, field)
 			case "imageUrl":
-				return ec.fieldContext_Project_imageUrl(ctx, field)
+				return ec.fieldContext_ProjectResponse_imageUrl(ctx, field)
 			case "additionalInfo":
-				return ec.fieldContext_Project_additionalInfo(ctx, field)
+				return ec.fieldContext_ProjectResponse_additionalInfo(ctx, field)
 			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
+				return ec.fieldContext_ProjectResponse_description(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ProjectResponse", field.Name)
 		},
 	}
 	defer func() {
@@ -571,9 +939,9 @@ func (ec *executionContext) _Mutation_deleteProject(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Project)
+	res := resTmp.(*project.ProjectResponse)
 	fc.Result = res
-	return ec.marshalNProject2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProject(ctx, field.Selections, res)
+	return ec.marshalNProjectResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_deleteProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -585,17 +953,17 @@ func (ec *executionContext) fieldContext_Mutation_deleteProject(ctx context.Cont
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
+				return ec.fieldContext_ProjectResponse_id(ctx, field)
 			case "title":
-				return ec.fieldContext_Project_title(ctx, field)
+				return ec.fieldContext_ProjectResponse_title(ctx, field)
 			case "imageUrl":
-				return ec.fieldContext_Project_imageUrl(ctx, field)
+				return ec.fieldContext_ProjectResponse_imageUrl(ctx, field)
 			case "additionalInfo":
-				return ec.fieldContext_Project_additionalInfo(ctx, field)
+				return ec.fieldContext_ProjectResponse_additionalInfo(ctx, field)
 			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
+				return ec.fieldContext_ProjectResponse_description(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ProjectResponse", field.Name)
 		},
 	}
 	defer func() {
@@ -612,8 +980,203 @@ func (ec *executionContext) fieldContext_Mutation_deleteProject(ctx context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_id(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Project_id(ctx, field)
+func (ec *executionContext) _Mutation_createIPR(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createIPR(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateIPR(rctx, fc.Args["input"].(model.CreateIPRRequest))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IPRResponse)
+	fc.Result = res
+	return ec.marshalNIPRResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createIPR(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IPRResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_IPRResponse_title(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_IPRResponse_publishedAt(ctx, field)
+			case "description":
+				return ec.fieldContext_IPRResponse_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IPRResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createIPR_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateIPR(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateIPR(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateIPR(rctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateIPRRequest))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IPRResponse)
+	fc.Result = res
+	return ec.marshalNIPRResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateIPR(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IPRResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_IPRResponse_title(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_IPRResponse_publishedAt(ctx, field)
+			case "description":
+				return ec.fieldContext_IPRResponse_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IPRResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateIPR_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteIPR(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteIPR(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteIPR(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IPRResponse)
+	fc.Result = res
+	return ec.marshalNIPRResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteIPR(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IPRResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_IPRResponse_title(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_IPRResponse_publishedAt(ctx, field)
+			case "description":
+				return ec.fieldContext_IPRResponse_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IPRResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteIPR_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProjectResponse_id(ctx context.Context, field graphql.CollectedField, obj *project.ProjectResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProjectResponse_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -643,9 +1206,9 @@ func (ec *executionContext) _Project_id(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Project_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ProjectResponse_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Project",
+		Object:     "ProjectResponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -656,8 +1219,8 @@ func (ec *executionContext) fieldContext_Project_id(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_title(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Project_title(ctx, field)
+func (ec *executionContext) _ProjectResponse_title(ctx context.Context, field graphql.CollectedField, obj *project.ProjectResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProjectResponse_title(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -687,9 +1250,9 @@ func (ec *executionContext) _Project_title(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Project_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ProjectResponse_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Project",
+		Object:     "ProjectResponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -700,8 +1263,8 @@ func (ec *executionContext) fieldContext_Project_title(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_imageUrl(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Project_imageUrl(ctx, field)
+func (ec *executionContext) _ProjectResponse_imageUrl(ctx context.Context, field graphql.CollectedField, obj *project.ProjectResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProjectResponse_imageUrl(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -731,9 +1294,9 @@ func (ec *executionContext) _Project_imageUrl(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Project_imageUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ProjectResponse_imageUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Project",
+		Object:     "ProjectResponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -744,8 +1307,8 @@ func (ec *executionContext) fieldContext_Project_imageUrl(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_additionalInfo(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Project_additionalInfo(ctx, field)
+func (ec *executionContext) _ProjectResponse_additionalInfo(ctx context.Context, field graphql.CollectedField, obj *project.ProjectResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProjectResponse_additionalInfo(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -775,9 +1338,9 @@ func (ec *executionContext) _Project_additionalInfo(ctx context.Context, field g
 	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Project_additionalInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ProjectResponse_additionalInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Project",
+		Object:     "ProjectResponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -788,8 +1351,8 @@ func (ec *executionContext) fieldContext_Project_additionalInfo(ctx context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Project_description(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Project_description(ctx, field)
+func (ec *executionContext) _ProjectResponse_description(ctx context.Context, field graphql.CollectedField, obj *project.ProjectResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProjectResponse_description(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -819,9 +1382,9 @@ func (ec *executionContext) _Project_description(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Project_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ProjectResponse_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Project",
+		Object:     "ProjectResponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -858,9 +1421,9 @@ func (ec *executionContext) _Query_project(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Project)
+	res := resTmp.(*project.ProjectResponse)
 	fc.Result = res
-	return ec.marshalNProject2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProject(ctx, field.Selections, res)
+	return ec.marshalNProjectResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_project(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -872,17 +1435,17 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
+				return ec.fieldContext_ProjectResponse_id(ctx, field)
 			case "title":
-				return ec.fieldContext_Project_title(ctx, field)
+				return ec.fieldContext_ProjectResponse_title(ctx, field)
 			case "imageUrl":
-				return ec.fieldContext_Project_imageUrl(ctx, field)
+				return ec.fieldContext_ProjectResponse_imageUrl(ctx, field)
 			case "additionalInfo":
-				return ec.fieldContext_Project_additionalInfo(ctx, field)
+				return ec.fieldContext_ProjectResponse_additionalInfo(ctx, field)
 			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
+				return ec.fieldContext_ProjectResponse_description(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ProjectResponse", field.Name)
 		},
 	}
 	defer func() {
@@ -925,9 +1488,9 @@ func (ec *executionContext) _Query_projects(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Project)
+	res := resTmp.([]*project.ProjectResponse)
 	fc.Result = res
-	return ec.marshalNProject2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProjectᚄ(ctx, field.Selections, res)
+	return ec.marshalNProjectResponse2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponseᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_projects(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -939,17 +1502,17 @@ func (ec *executionContext) fieldContext_Query_projects(ctx context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Project_id(ctx, field)
+				return ec.fieldContext_ProjectResponse_id(ctx, field)
 			case "title":
-				return ec.fieldContext_Project_title(ctx, field)
+				return ec.fieldContext_ProjectResponse_title(ctx, field)
 			case "imageUrl":
-				return ec.fieldContext_Project_imageUrl(ctx, field)
+				return ec.fieldContext_ProjectResponse_imageUrl(ctx, field)
 			case "additionalInfo":
-				return ec.fieldContext_Project_additionalInfo(ctx, field)
+				return ec.fieldContext_ProjectResponse_additionalInfo(ctx, field)
 			case "description":
-				return ec.fieldContext_Project_description(ctx, field)
+				return ec.fieldContext_ProjectResponse_description(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ProjectResponse", field.Name)
 		},
 	}
 	defer func() {
@@ -960,6 +1523,136 @@ func (ec *executionContext) fieldContext_Query_projects(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_projects_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_ipr(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_ipr(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Ipr(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IPRResponse)
+	fc.Result = res
+	return ec.marshalNIPRResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_ipr(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IPRResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_IPRResponse_title(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_IPRResponse_publishedAt(ctx, field)
+			case "description":
+				return ec.fieldContext_IPRResponse_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IPRResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_ipr_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_iprs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_iprs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Iprs(rctx, fc.Args["search"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IPRResponse)
+	fc.Result = res
+	return ec.marshalNIPRResponse2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_iprs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IPRResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_IPRResponse_title(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_IPRResponse_publishedAt(ctx, field)
+			case "description":
+				return ec.fieldContext_IPRResponse_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IPRResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_iprs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -2868,8 +3561,52 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputCreateProject(ctx context.Context, obj interface{}) (model.CreateProject, error) {
-	var it model.CreateProject
+func (ec *executionContext) unmarshalInputCreateIPRRequest(ctx context.Context, obj interface{}) (model.CreateIPRRequest, error) {
+	var it model.CreateIPRRequest
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "publishedAt", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "publishedAt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
+			it.PublishedAt, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateProjectRequest(ctx context.Context, obj interface{}) (project.CreateProjectRequest, error) {
+	var it project.CreateProjectRequest
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -2920,8 +3657,52 @@ func (ec *executionContext) unmarshalInputCreateProject(ctx context.Context, obj
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateProject(ctx context.Context, obj interface{}) (model.UpdateProject, error) {
-	var it model.UpdateProject
+func (ec *executionContext) unmarshalInputUpdateIPRRequest(ctx context.Context, obj interface{}) (model.UpdateIPRRequest, error) {
+	var it model.UpdateIPRRequest
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "publishedAt", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "publishedAt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishedAt"))
+			it.PublishedAt, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateProjectRequest(ctx context.Context, obj interface{}) (project.UpdateProjectRequest, error) {
+	var it project.UpdateProjectRequest
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -2980,6 +3761,55 @@ func (ec *executionContext) unmarshalInputUpdateProject(ctx context.Context, obj
 
 // region    **************************** object.gotpl ****************************
 
+var iPRResponseImplementors = []string{"IPRResponse"}
+
+func (ec *executionContext) _IPRResponse(ctx context.Context, sel ast.SelectionSet, obj *model.IPRResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, iPRResponseImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IPRResponse")
+		case "id":
+
+			out.Values[i] = ec._IPRResponse_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "title":
+
+			out.Values[i] = ec._IPRResponse_title(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "publishedAt":
+
+			out.Values[i] = ec._IPRResponse_publishedAt(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "description":
+
+			out.Values[i] = ec._IPRResponse_description(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -3026,6 +3856,33 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createIPR":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createIPR(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateIPR":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateIPR(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteIPR":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteIPR(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3037,47 +3894,47 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
-var projectImplementors = []string{"Project"}
+var projectResponseImplementors = []string{"ProjectResponse"}
 
-func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, obj *model.Project) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, projectImplementors)
+func (ec *executionContext) _ProjectResponse(ctx context.Context, sel ast.SelectionSet, obj *project.ProjectResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, projectResponseImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Project")
+			out.Values[i] = graphql.MarshalString("ProjectResponse")
 		case "id":
 
-			out.Values[i] = ec._Project_id(ctx, field, obj)
+			out.Values[i] = ec._ProjectResponse_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "title":
 
-			out.Values[i] = ec._Project_title(ctx, field, obj)
+			out.Values[i] = ec._ProjectResponse_title(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "imageUrl":
 
-			out.Values[i] = ec._Project_imageUrl(ctx, field, obj)
+			out.Values[i] = ec._ProjectResponse_imageUrl(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "additionalInfo":
 
-			out.Values[i] = ec._Project_additionalInfo(ctx, field, obj)
+			out.Values[i] = ec._ProjectResponse_additionalInfo(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "description":
 
-			out.Values[i] = ec._Project_description(ctx, field, obj)
+			out.Values[i] = ec._ProjectResponse_description(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -3145,6 +4002,52 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_projects(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "ipr":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_ipr(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "iprs":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_iprs(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3514,16 +4417,21 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCreateProject2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐCreateProject(ctx context.Context, v interface{}) (model.CreateProject, error) {
-	res, err := ec.unmarshalInputCreateProject(ctx, v)
+func (ec *executionContext) unmarshalNCreateIPRRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐCreateIPRRequest(ctx context.Context, v interface{}) (model.CreateIPRRequest, error) {
+	res, err := ec.unmarshalInputCreateIPRRequest(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNProject2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v model.Project) graphql.Marshaler {
-	return ec._Project(ctx, sel, &v)
+func (ec *executionContext) unmarshalNCreateProjectRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐCreateProjectRequest(ctx context.Context, v interface{}) (project.CreateProjectRequest, error) {
+	res, err := ec.unmarshalInputCreateProjectRequest(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNProject2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProjectᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Project) graphql.Marshaler {
+func (ec *executionContext) marshalNIPRResponse2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponse(ctx context.Context, sel ast.SelectionSet, v model.IPRResponse) graphql.Marshaler {
+	return ec._IPRResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIPRResponse2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IPRResponse) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3547,7 +4455,7 @@ func (ec *executionContext) marshalNProject2ᚕᚖgithubᚗcomᚋrifkiystarkᚋp
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNProject2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProject(ctx, sel, v[i])
+			ret[i] = ec.marshalNIPRResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponse(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -3567,14 +4475,72 @@ func (ec *executionContext) marshalNProject2ᚕᚖgithubᚗcomᚋrifkiystarkᚋp
 	return ret
 }
 
-func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model.Project) graphql.Marshaler {
+func (ec *executionContext) marshalNIPRResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐIPRResponse(ctx context.Context, sel ast.SelectionSet, v *model.IPRResponse) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._Project(ctx, sel, v)
+	return ec._IPRResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNProjectResponse2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponse(ctx context.Context, sel ast.SelectionSet, v project.ProjectResponse) graphql.Marshaler {
+	return ec._ProjectResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNProjectResponse2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponseᚄ(ctx context.Context, sel ast.SelectionSet, v []*project.ProjectResponse) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNProjectResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponse(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNProjectResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐProjectResponse(ctx context.Context, sel ast.SelectionSet, v *project.ProjectResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProjectResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -3624,8 +4590,13 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
-func (ec *executionContext) unmarshalNUpdateProject2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐUpdateProject(ctx context.Context, v interface{}) (model.UpdateProject, error) {
-	res, err := ec.unmarshalInputUpdateProject(ctx, v)
+func (ec *executionContext) unmarshalNUpdateIPRRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋgraphᚋmodelᚐUpdateIPRRequest(ctx context.Context, v interface{}) (model.UpdateIPRRequest, error) {
+	res, err := ec.unmarshalInputUpdateIPRRequest(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateProjectRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋprojectᚐUpdateProjectRequest(ctx context.Context, v interface{}) (project.UpdateProjectRequest, error) {
+	res, err := ec.unmarshalInputUpdateProjectRequest(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

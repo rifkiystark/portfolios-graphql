@@ -90,8 +90,8 @@ func (p *IPRServiceImpl) GetIPRs(ctx context.Context, search *string) ([]*IPRRes
 	}
 
 	var iprs []*IPRResponse
-	for _, projectEntity := range iprEntities {
-		projectModel := projectEntity.ToResponse()
+	for _, iprEntity := range iprEntities {
+		projectModel := iprEntity.ToResponse()
 		iprs = append(iprs, &projectModel)
 	}
 

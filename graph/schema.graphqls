@@ -77,10 +77,7 @@ type Mutation {
     deleteIPR(id: String!): IPRResponse!
 
     createCertificate(input: CreateCertificateRequest!): CertificateResponse!
-    updateCertificate(
-        id: String!
-        input: UpdateCertificateRequest!
-    ): CertificateResponse!
+    updateCertificate(id: String!, input: UpdateCertificateRequest!): CertificateResponse!
     deleteCertificate(id: String!): CertificateResponse!
 }
 

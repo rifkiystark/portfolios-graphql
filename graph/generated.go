@@ -40,11 +40,8 @@ type Config struct {
 }
 
 type ResolverRoot interface {
-	CertificateResponse() CertificateResponseResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
-	CreateCertificateRequest() CreateCertificateRequestResolver
-	UpdateCertificateRequest() UpdateCertificateRequestResolver
 }
 
 type DirectiveRoot struct {
@@ -96,9 +93,6 @@ type ComplexityRoot struct {
 	}
 }
 
-type CertificateResponseResolver interface {
-	ValidUntil(ctx context.Context, obj *certificate.CertificateResponse) (*time.Time, error)
-}
 type MutationResolver interface {
 	CreateProject(ctx context.Context, input project.CreateProjectRequest) (*project.ProjectResponse, error)
 	UpdateProject(ctx context.Context, id string, input project.UpdateProjectRequest) (*project.ProjectResponse, error)
@@ -117,13 +111,6 @@ type QueryResolver interface {
 	Iprs(ctx context.Context, search *string) ([]*ipr.IPRResponse, error)
 	Certificate(ctx context.Context, id string) (*certificate.CertificateResponse, error)
 	Certificates(ctx context.Context, search *string) ([]*certificate.CertificateResponse, error)
-}
-
-type CreateCertificateRequestResolver interface {
-	ValidUntil(ctx context.Context, obj *certificate.CreateCertificateRequest, data *time.Time) error
-}
-type UpdateCertificateRequestResolver interface {
-	ValidUntil(ctx context.Context, obj *certificate.UpdateCertificateRequest, data *time.Time) error
 }
 
 type executableSchema struct {
@@ -919,7 +906,7 @@ func (ec *executionContext) _CertificateResponse_validUntil(ctx context.Context,
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.CertificateResponse().ValidUntil(rctx, obj)
+		return obj.ValidUntil, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -931,17 +918,17 @@ func (ec *executionContext) _CertificateResponse_validUntil(ctx context.Context,
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*time.Time)
+	res := resTmp.(time.Time)
 	fc.Result = res
-	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_CertificateResponse_validUntil(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CertificateResponse",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -4356,11 +4343,8 @@ func (ec *executionContext) unmarshalInputCreateCertificateRequest(ctx context.C
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validUntil"))
-			data, err := ec.unmarshalNTime2ᚖtimeᚐTime(ctx, v)
+			it.ValidUntil, err = ec.unmarshalNTime2timeᚐTime(ctx, v)
 			if err != nil {
-				return it, err
-			}
-			if err = ec.resolvers.CreateCertificateRequest().ValidUntil(ctx, &it, data); err != nil {
 				return it, err
 			}
 		case "url":
@@ -4507,11 +4491,8 @@ func (ec *executionContext) unmarshalInputUpdateCertificateRequest(ctx context.C
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validUntil"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			it.ValidUntil, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
-				return it, err
-			}
-			if err = ec.resolvers.UpdateCertificateRequest().ValidUntil(ctx, &it, data); err != nil {
 				return it, err
 			}
 		}
@@ -4639,41 +4620,28 @@ func (ec *executionContext) _CertificateResponse(ctx context.Context, sel ast.Se
 			out.Values[i] = ec._CertificateResponse_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "title":
 
 			out.Values[i] = ec._CertificateResponse_title(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "validUntil":
-			field := field
 
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._CertificateResponse_validUntil(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._CertificateResponse_validUntil(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
 			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
 		case "url":
 
 			out.Values[i] = ec._CertificateResponse_url(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -5665,27 +5633,6 @@ func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v in
 
 func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
 	res := graphql.MarshalTime(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) unmarshalNTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
-	res, err := graphql.UnmarshalTime(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	res := graphql.MarshalTime(*v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

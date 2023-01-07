@@ -6,18 +6,11 @@ package graph
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/rifkiystark/portfolios-api/cmd/certificate"
 	"github.com/rifkiystark/portfolios-api/cmd/ipr"
 	"github.com/rifkiystark/portfolios-api/cmd/project"
 )
-
-// ValidUntil is the resolver for the validUntil field.
-func (r *certificateResponseResolver) ValidUntil(ctx context.Context, obj *certificate.CertificateResponse) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented: ValidUntil - validUntil"))
-}
 
 // CreateProject is the resolver for the createProject field.
 func (r *mutationResolver) CreateProject(ctx context.Context, input project.CreateProjectRequest) (*project.ProjectResponse, error) {
@@ -51,17 +44,17 @@ func (r *mutationResolver) DeleteIPR(ctx context.Context, id string) (*ipr.IPRRe
 
 // CreateCertificate is the resolver for the createCertificate field.
 func (r *mutationResolver) CreateCertificate(ctx context.Context, input certificate.CreateCertificateRequest) (*certificate.CertificateResponse, error) {
-	panic(fmt.Errorf("not implemented: CreateCertificate - createCertificate"))
+	return r.CertificateService.CreateCertificate(ctx, input)
 }
 
 // UpdateCertificate is the resolver for the updateCertificate field.
 func (r *mutationResolver) UpdateCertificate(ctx context.Context, id string, input certificate.UpdateCertificateRequest) (*certificate.CertificateResponse, error) {
-	panic(fmt.Errorf("not implemented: UpdateCertificate - updateCertificate"))
+	return r.CertificateService.UpdateCertificate(ctx, id, input)
 }
 
 // DeleteCertificate is the resolver for the deleteCertificate field.
 func (r *mutationResolver) DeleteCertificate(ctx context.Context, id string) (*certificate.CertificateResponse, error) {
-	panic(fmt.Errorf("not implemented: DeleteCertificate - deleteCertificate"))
+	return r.CertificateService.DeleteCertificate(ctx, id)
 }
 
 // Project is the resolver for the project field.
@@ -86,27 +79,12 @@ func (r *queryResolver) Iprs(ctx context.Context, search *string) ([]*ipr.IPRRes
 
 // Certificate is the resolver for the certificate field.
 func (r *queryResolver) Certificate(ctx context.Context, id string) (*certificate.CertificateResponse, error) {
-	panic(fmt.Errorf("not implemented: Certificate - certificate"))
+	return r.CertificateService.GetCertificate(ctx, id)
 }
 
 // Certificates is the resolver for the certificates field.
 func (r *queryResolver) Certificates(ctx context.Context, search *string) ([]*certificate.CertificateResponse, error) {
-	panic(fmt.Errorf("not implemented: Certificates - certificates"))
-}
-
-// ValidUntil is the resolver for the validUntil field.
-func (r *createCertificateRequestResolver) ValidUntil(ctx context.Context, obj *certificate.CreateCertificateRequest, data *time.Time) error {
-	panic(fmt.Errorf("not implemented: ValidUntil - validUntil"))
-}
-
-// ValidUntil is the resolver for the validUntil field.
-func (r *updateCertificateRequestResolver) ValidUntil(ctx context.Context, obj *certificate.UpdateCertificateRequest, data *time.Time) error {
-	panic(fmt.Errorf("not implemented: ValidUntil - validUntil"))
-}
-
-// CertificateResponse returns CertificateResponseResolver implementation.
-func (r *Resolver) CertificateResponse() CertificateResponseResolver {
-	return &certificateResponseResolver{r}
+	return r.CertificateService.GetCertificates(ctx, search)
 }
 
 // Mutation returns MutationResolver implementation.
@@ -115,18 +93,5 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-// CreateCertificateRequest returns CreateCertificateRequestResolver implementation.
-func (r *Resolver) CreateCertificateRequest() CreateCertificateRequestResolver {
-	return &createCertificateRequestResolver{r}
-}
-
-// UpdateCertificateRequest returns UpdateCertificateRequestResolver implementation.
-func (r *Resolver) UpdateCertificateRequest() UpdateCertificateRequestResolver {
-	return &updateCertificateRequestResolver{r}
-}
-
-type certificateResponseResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type createCertificateRequestResolver struct{ *Resolver }
-type updateCertificateRequestResolver struct{ *Resolver }

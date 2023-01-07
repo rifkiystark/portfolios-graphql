@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"github.com/rifkiystark/portfolios-api/cmd/certificate"
 	"github.com/rifkiystark/portfolios-api/cmd/ipr"
 	"github.com/rifkiystark/portfolios-api/cmd/project"
 )
@@ -10,6 +11,7 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	ProjectService project.ProjectService
-	IPRService     ipr.IPRService
+	ProjectService     project.ProjectService
+	IPRService         ipr.IPRService
+	CertificateService certificate.CertificateService
 }

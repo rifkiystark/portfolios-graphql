@@ -28,8 +28,10 @@ func (up *UpdateProjectRequest) ToEntity() Project {
 
 func (cp *Project) ToResponse() ProjectResponse {
 	return ProjectResponse{
+		ID:             cp.ID.Hex(),
 		Title:          cp.Title,
 		AdditionalInfo: cp.AdditionalInfo,
 		Description:    cp.Description,
+		ImageURL:       cp.ImageURL,
 	}
 }

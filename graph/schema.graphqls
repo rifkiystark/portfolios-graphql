@@ -36,9 +36,9 @@ input CreateIPRRequest {
 }
 
 input UpdateIPRRequest {
-    title: String!
-    publishedAt: Time!
-    description: String!
+    title: String
+    publishedAt: Time
+    description: String
 }
 
 type IPRResponse {

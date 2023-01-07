@@ -33,6 +33,7 @@ func (up *UpdateIPRRequest) ToEntity() IPR {
 
 func (cp *IPR) ToResponse() IPRResponse {
 	return IPRResponse{
+		ID:          cp.ID.Hex(),
 		Title:       cp.Title,
 		PublishedAt: cp.PublishedAt,
 		Description: cp.Description,

@@ -6,10 +6,9 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/rifkiystark/portfolios-api/cmd/ipr"
 	"github.com/rifkiystark/portfolios-api/cmd/project"
-	"github.com/rifkiystark/portfolios-api/graph/model"
 )
 
 // CreateProject is the resolver for the createProject field.
@@ -28,18 +27,18 @@ func (r *mutationResolver) DeleteProject(ctx context.Context, id string) (*proje
 }
 
 // CreateIPR is the resolver for the createIPR field.
-func (r *mutationResolver) CreateIPR(ctx context.Context, input model.CreateIPRRequest) (*model.IPRResponse, error) {
-	panic(fmt.Errorf("not implemented: CreateIPR - createIPR"))
+func (r *mutationResolver) CreateIPR(ctx context.Context, input ipr.CreateIPRRequest) (*ipr.IPRResponse, error) {
+	return r.IPRService.CreateIPR(ctx, input)
 }
 
 // UpdateIPR is the resolver for the updateIPR field.
-func (r *mutationResolver) UpdateIPR(ctx context.Context, id string, input model.UpdateIPRRequest) (*model.IPRResponse, error) {
-	panic(fmt.Errorf("not implemented: UpdateIPR - updateIPR"))
+func (r *mutationResolver) UpdateIPR(ctx context.Context, id string, input ipr.UpdateIPRRequest) (*ipr.IPRResponse, error) {
+	return r.IPRService.UpdateIPR(ctx, id, input)
 }
 
 // DeleteIPR is the resolver for the deleteIPR field.
-func (r *mutationResolver) DeleteIPR(ctx context.Context, id string) (*model.IPRResponse, error) {
-	panic(fmt.Errorf("not implemented: DeleteIPR - deleteIPR"))
+func (r *mutationResolver) DeleteIPR(ctx context.Context, id string) (*ipr.IPRResponse, error) {
+	return r.IPRService.DeleteIPR(ctx, id)
 }
 
 // Project is the resolver for the project field.
@@ -53,13 +52,13 @@ func (r *queryResolver) Projects(ctx context.Context, search *string) ([]*projec
 }
 
 // Ipr is the resolver for the ipr field.
-func (r *queryResolver) Ipr(ctx context.Context, id string) (*model.IPRResponse, error) {
-	panic(fmt.Errorf("not implemented: Ipr - ipr"))
+func (r *queryResolver) Ipr(ctx context.Context, id string) (*ipr.IPRResponse, error) {
+	return r.IPRService.GetIPR(ctx, id)
 }
 
 // Iprs is the resolver for the iprs field.
-func (r *queryResolver) Iprs(ctx context.Context, search *string) ([]*model.IPRResponse, error) {
-	panic(fmt.Errorf("not implemented: Iprs - iprs"))
+func (r *queryResolver) Iprs(ctx context.Context, search *string) ([]*ipr.IPRResponse, error) {
+	return r.IPRService.GetIPRs(ctx, search)
 }
 
 // Mutation returns MutationResolver implementation.

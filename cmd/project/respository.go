@@ -29,7 +29,7 @@ func NewRepository(db *mongo.Database) ProjectRepository {
 }
 
 func (p *ProjectRepositoryImpl) CreateProject(project *Project) error {
-	projectCollections := p.db.Collection("projects")
+	projectCollections := p.db.Collection("project")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -44,7 +44,7 @@ func (p *ProjectRepositoryImpl) CreateProject(project *Project) error {
 }
 
 func (p *ProjectRepositoryImpl) UpdateProject(id string, project *Project) error {
-	projectCollections := p.db.Collection("projects")
+	projectCollections := p.db.Collection("project")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -70,10 +70,10 @@ func (p *ProjectRepositoryImpl) GetProject(id string) (Project, error) {
 		return Project{}, err
 	}
 
-	movieColl := p.db.Collection("projects")
+	projectCollection := p.db.Collection("project")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	res := movieColl.FindOne(ctx, bson.M{"_id": ObjectID})
+	res := projectCollection.FindOne(ctx, bson.M{"_id": ObjectID})
 
 	project := Project{}
 
@@ -83,7 +83,7 @@ func (p *ProjectRepositoryImpl) GetProject(id string) (Project, error) {
 }
 
 func (p *ProjectRepositoryImpl) GetProjects(search *string) ([]Project, error) {
-	movieColl := p.db.Collection("projects")
+	projectCollection := p.db.Collection("project")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -92,7 +92,7 @@ func (p *ProjectRepositoryImpl) GetProjects(search *string) ([]Project, error) {
 		filter = bson.D{{"$text", bson.D{{"$search", *search}}}}
 	}
 
-	cur, err := movieColl.Find(ctx, filter)
+	cur, err := projectCollection.Find(ctx, filter)
 	if err != nil {
 		fmt.Printf("error finding document: %v", err)
 		return nil, err
@@ -109,7 +109,7 @@ func (p *ProjectRepositoryImpl) GetProjects(search *string) ([]Project, error) {
 }
 
 func (p *ProjectRepositoryImpl) DeleteProject(id string) error {
-	movieColl := p.db.Collection("projects")
+	projectCollection := p.db.Collection("project")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -118,7 +118,7 @@ func (p *ProjectRepositoryImpl) DeleteProject(id string) error {
 		fmt.Printf("error: %v", err)
 		return err
 	}
-	res, err := movieColl.DeleteOne(ctx, bson.M{"_id": ObjectID})
+	res, err := projectCollection.DeleteOne(ctx, bson.M{"_id": ObjectID})
 	if err != nil {
 		fmt.Printf("error DeleteOne: %v", err)
 		return err

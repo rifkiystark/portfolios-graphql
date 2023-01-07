@@ -4,6 +4,8 @@
 
 scalar Upload
 
+scalar Time
+
 input CreateProjectRequest {
     title: String!
     image: Upload!
@@ -28,21 +30,23 @@ type ProjectResponse {
 
 input CreateIPRRequest {
     title: String!
-    publishedAt: String!
+    publishedAt: Time!
     description: String!
+    url: String!
 }
 
 input UpdateIPRRequest {
     title: String!
-    publishedAt: String!
+    publishedAt: Time!
     description: String!
 }
 
 type IPRResponse {
     id: String!
     title: String!
-    publishedAt: String!
+    publishedAt: Time!
     description: String!
+    url: String!
 }
 
 type Mutation {

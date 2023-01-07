@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"github.com/rifkiystark/portfolios-api/cmd/ipr"
 	"github.com/rifkiystark/portfolios-api/cmd/project"
 )
 
@@ -10,4 +11,5 @@ import (
 
 type Resolver struct {
 	ProjectService project.ProjectService
+	IPRService     ipr.IPRService
 }

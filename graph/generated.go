@@ -15,6 +15,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/rifkiystark/portfolios-api/cmd/certificate"
 	"github.com/rifkiystark/portfolios-api/cmd/ipr"
 	"github.com/rifkiystark/portfolios-api/cmd/project"
 	gqlparser "github.com/vektah/gqlparser/v2"
@@ -39,14 +40,24 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	CertificateResponse() CertificateResponseResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	CreateCertificateRequest() CreateCertificateRequestResolver
+	UpdateCertificateRequest() UpdateCertificateRequestResolver
 }
 
 type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	CertificateResponse struct {
+		ID         func(childComplexity int) int
+		Title      func(childComplexity int) int
+		Url        func(childComplexity int) int
+		ValidUntil func(childComplexity int) int
+	}
+
 	IPRResponse struct {
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
@@ -56,12 +67,15 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateIPR     func(childComplexity int, input ipr.CreateIPRRequest) int
-		CreateProject func(childComplexity int, input project.CreateProjectRequest) int
-		DeleteIPR     func(childComplexity int, id string) int
-		DeleteProject func(childComplexity int, id string) int
-		UpdateIPR     func(childComplexity int, id string, input ipr.UpdateIPRRequest) int
-		UpdateProject func(childComplexity int, id string, input project.UpdateProjectRequest) int
+		CreateCertificate func(childComplexity int, input certificate.CreateCertificateRequest) int
+		CreateIPR         func(childComplexity int, input ipr.CreateIPRRequest) int
+		CreateProject     func(childComplexity int, input project.CreateProjectRequest) int
+		DeleteCertificate func(childComplexity int, id string) int
+		DeleteIPR         func(childComplexity int, id string) int
+		DeleteProject     func(childComplexity int, id string) int
+		UpdateCertificate func(childComplexity int, id string, input certificate.UpdateCertificateRequest) int
+		UpdateIPR         func(childComplexity int, id string, input ipr.UpdateIPRRequest) int
+		UpdateProject     func(childComplexity int, id string, input project.UpdateProjectRequest) int
 	}
 
 	ProjectResponse struct {
@@ -73,13 +87,18 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Ipr      func(childComplexity int, id string) int
-		Iprs     func(childComplexity int, search *string) int
-		Project  func(childComplexity int, id string) int
-		Projects func(childComplexity int, search *string) int
+		Certificate  func(childComplexity int, id string) int
+		Certificates func(childComplexity int, search *string) int
+		Ipr          func(childComplexity int, id string) int
+		Iprs         func(childComplexity int, search *string) int
+		Project      func(childComplexity int, id string) int
+		Projects     func(childComplexity int, search *string) int
 	}
 }
 
+type CertificateResponseResolver interface {
+	ValidUntil(ctx context.Context, obj *certificate.CertificateResponse) (*time.Time, error)
+}
 type MutationResolver interface {
 	CreateProject(ctx context.Context, input project.CreateProjectRequest) (*project.ProjectResponse, error)
 	UpdateProject(ctx context.Context, id string, input project.UpdateProjectRequest) (*project.ProjectResponse, error)
@@ -87,12 +106,24 @@ type MutationResolver interface {
 	CreateIPR(ctx context.Context, input ipr.CreateIPRRequest) (*ipr.IPRResponse, error)
 	UpdateIPR(ctx context.Context, id string, input ipr.UpdateIPRRequest) (*ipr.IPRResponse, error)
 	DeleteIPR(ctx context.Context, id string) (*ipr.IPRResponse, error)
+	CreateCertificate(ctx context.Context, input certificate.CreateCertificateRequest) (*certificate.CertificateResponse, error)
+	UpdateCertificate(ctx context.Context, id string, input certificate.UpdateCertificateRequest) (*certificate.CertificateResponse, error)
+	DeleteCertificate(ctx context.Context, id string) (*certificate.CertificateResponse, error)
 }
 type QueryResolver interface {
 	Project(ctx context.Context, id string) (*project.ProjectResponse, error)
 	Projects(ctx context.Context, search *string) ([]*project.ProjectResponse, error)
 	Ipr(ctx context.Context, id string) (*ipr.IPRResponse, error)
 	Iprs(ctx context.Context, search *string) ([]*ipr.IPRResponse, error)
+	Certificate(ctx context.Context, id string) (*certificate.CertificateResponse, error)
+	Certificates(ctx context.Context, search *string) ([]*certificate.CertificateResponse, error)
+}
+
+type CreateCertificateRequestResolver interface {
+	ValidUntil(ctx context.Context, obj *certificate.CreateCertificateRequest, data *time.Time) error
+}
+type UpdateCertificateRequestResolver interface {
+	ValidUntil(ctx context.Context, obj *certificate.UpdateCertificateRequest, data *time.Time) error
 }
 
 type executableSchema struct {
@@ -109,6 +140,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "CertificateResponse.id":
+		if e.complexity.CertificateResponse.ID == nil {
+			break
+		}
+
+		return e.complexity.CertificateResponse.ID(childComplexity), true
+
+	case "CertificateResponse.title":
+		if e.complexity.CertificateResponse.Title == nil {
+			break
+		}
+
+		return e.complexity.CertificateResponse.Title(childComplexity), true
+
+	case "CertificateResponse.url":
+		if e.complexity.CertificateResponse.Url == nil {
+			break
+		}
+
+		return e.complexity.CertificateResponse.Url(childComplexity), true
+
+	case "CertificateResponse.validUntil":
+		if e.complexity.CertificateResponse.ValidUntil == nil {
+			break
+		}
+
+		return e.complexity.CertificateResponse.ValidUntil(childComplexity), true
 
 	case "IPRResponse.description":
 		if e.complexity.IPRResponse.Description == nil {
@@ -145,6 +204,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.IPRResponse.Url(childComplexity), true
 
+	case "Mutation.createCertificate":
+		if e.complexity.Mutation.CreateCertificate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCertificate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCertificate(childComplexity, args["input"].(certificate.CreateCertificateRequest)), true
+
 	case "Mutation.createIPR":
 		if e.complexity.Mutation.CreateIPR == nil {
 			break
@@ -169,6 +240,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateProject(childComplexity, args["input"].(project.CreateProjectRequest)), true
 
+	case "Mutation.deleteCertificate":
+		if e.complexity.Mutation.DeleteCertificate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteCertificate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteCertificate(childComplexity, args["id"].(string)), true
+
 	case "Mutation.deleteIPR":
 		if e.complexity.Mutation.DeleteIPR == nil {
 			break
@@ -192,6 +275,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteProject(childComplexity, args["id"].(string)), true
+
+	case "Mutation.updateCertificate":
+		if e.complexity.Mutation.UpdateCertificate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCertificate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateCertificate(childComplexity, args["id"].(string), args["input"].(certificate.UpdateCertificateRequest)), true
 
 	case "Mutation.updateIPR":
 		if e.complexity.Mutation.UpdateIPR == nil {
@@ -252,6 +347,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ProjectResponse.Title(childComplexity), true
 
+	case "Query.certificate":
+		if e.complexity.Query.Certificate == nil {
+			break
+		}
+
+		args, err := ec.field_Query_certificate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Certificate(childComplexity, args["id"].(string)), true
+
+	case "Query.certificates":
+		if e.complexity.Query.Certificates == nil {
+			break
+		}
+
+		args, err := ec.field_Query_certificates_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Certificates(childComplexity, args["search"].(*string)), true
+
 	case "Query.ipr":
 		if e.complexity.Query.Ipr == nil {
 			break
@@ -308,8 +427,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputCreateCertificateRequest,
 		ec.unmarshalInputCreateIPRRequest,
 		ec.unmarshalInputCreateProjectRequest,
+		ec.unmarshalInputUpdateCertificateRequest,
 		ec.unmarshalInputUpdateIPRRequest,
 		ec.unmarshalInputUpdateProjectRequest,
 	)
@@ -391,6 +512,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_createCertificate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 certificate.CreateCertificateRequest
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateCertificateRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCreateCertificateRequest(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createIPR_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -421,6 +557,21 @@ func (ec *executionContext) field_Mutation_createProject_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteCertificate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteIPR_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -448,6 +599,30 @@ func (ec *executionContext) field_Mutation_deleteProject_args(ctx context.Contex
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCertificate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 certificate.UpdateCertificateRequest
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNUpdateCertificateRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐUpdateCertificateRequest(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -511,6 +686,36 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_certificate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_certificates_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *string
+	if tmp, ok := rawArgs["search"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["search"] = arg0
 	return args, nil
 }
 
@@ -611,6 +816,182 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _CertificateResponse_id(ctx context.Context, field graphql.CollectedField, obj *certificate.CertificateResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CertificateResponse_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CertificateResponse_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CertificateResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CertificateResponse_title(ctx context.Context, field graphql.CollectedField, obj *certificate.CertificateResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CertificateResponse_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CertificateResponse_title(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CertificateResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CertificateResponse_validUntil(ctx context.Context, field graphql.CollectedField, obj *certificate.CertificateResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CertificateResponse_validUntil(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CertificateResponse().ValidUntil(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CertificateResponse_validUntil(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CertificateResponse",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CertificateResponse_url(ctx context.Context, field graphql.CollectedField, obj *certificate.CertificateResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CertificateResponse_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Url, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CertificateResponse_url(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CertificateResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _IPRResponse_id(ctx context.Context, field graphql.CollectedField, obj *ipr.IPRResponse) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IPRResponse_id(ctx, field)
@@ -1234,6 +1615,201 @@ func (ec *executionContext) fieldContext_Mutation_deleteIPR(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createCertificate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createCertificate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCertificate(rctx, fc.Args["input"].(certificate.CreateCertificateRequest))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*certificate.CertificateResponse)
+	fc.Result = res
+	return ec.marshalNCertificateResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createCertificate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CertificateResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_CertificateResponse_title(ctx, field)
+			case "validUntil":
+				return ec.fieldContext_CertificateResponse_validUntil(ctx, field)
+			case "url":
+				return ec.fieldContext_CertificateResponse_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CertificateResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createCertificate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateCertificate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateCertificate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateCertificate(rctx, fc.Args["id"].(string), fc.Args["input"].(certificate.UpdateCertificateRequest))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*certificate.CertificateResponse)
+	fc.Result = res
+	return ec.marshalNCertificateResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCertificate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CertificateResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_CertificateResponse_title(ctx, field)
+			case "validUntil":
+				return ec.fieldContext_CertificateResponse_validUntil(ctx, field)
+			case "url":
+				return ec.fieldContext_CertificateResponse_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CertificateResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCertificate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteCertificate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteCertificate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteCertificate(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*certificate.CertificateResponse)
+	fc.Result = res
+	return ec.marshalNCertificateResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteCertificate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CertificateResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_CertificateResponse_title(ctx, field)
+			case "validUntil":
+				return ec.fieldContext_CertificateResponse_validUntil(ctx, field)
+			case "url":
+				return ec.fieldContext_CertificateResponse_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CertificateResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteCertificate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProjectResponse_id(ctx context.Context, field graphql.CollectedField, obj *project.ProjectResponse) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ProjectResponse_id(ctx, field)
 	if err != nil {
@@ -1716,6 +2292,136 @@ func (ec *executionContext) fieldContext_Query_iprs(ctx context.Context, field g
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_iprs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_certificate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_certificate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Certificate(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*certificate.CertificateResponse)
+	fc.Result = res
+	return ec.marshalNCertificateResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_certificate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CertificateResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_CertificateResponse_title(ctx, field)
+			case "validUntil":
+				return ec.fieldContext_CertificateResponse_validUntil(ctx, field)
+			case "url":
+				return ec.fieldContext_CertificateResponse_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CertificateResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_certificate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_certificates(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_certificates(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Certificates(rctx, fc.Args["search"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*certificate.CertificateResponse)
+	fc.Result = res
+	return ec.marshalNCertificateResponse2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_certificates(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_CertificateResponse_id(ctx, field)
+			case "title":
+				return ec.fieldContext_CertificateResponse_title(ctx, field)
+			case "validUntil":
+				return ec.fieldContext_CertificateResponse_validUntil(ctx, field)
+			case "url":
+				return ec.fieldContext_CertificateResponse_url(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CertificateResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_certificates_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -3624,6 +4330,53 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateCertificateRequest(ctx context.Context, obj interface{}) (certificate.CreateCertificateRequest, error) {
+	var it certificate.CreateCertificateRequest
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "validUntil", "url"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "validUntil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validUntil"))
+			data, err := ec.unmarshalNTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.CreateCertificateRequest().ValidUntil(ctx, &it, data); err != nil {
+				return it, err
+			}
+		case "url":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			it.Url, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateIPRRequest(ctx context.Context, obj interface{}) (ipr.CreateIPRRequest, error) {
 	var it ipr.CreateIPRRequest
 	asMap := map[string]interface{}{}
@@ -3720,6 +4473,45 @@ func (ec *executionContext) unmarshalInputCreateProjectRequest(ctx context.Conte
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateCertificateRequest(ctx context.Context, obj interface{}) (certificate.UpdateCertificateRequest, error) {
+	var it certificate.UpdateCertificateRequest
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "validUntil"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "validUntil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validUntil"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.UpdateCertificateRequest().ValidUntil(ctx, &it, data); err != nil {
 				return it, err
 			}
 		}
@@ -3831,6 +4623,68 @@ func (ec *executionContext) unmarshalInputUpdateProjectRequest(ctx context.Conte
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var certificateResponseImplementors = []string{"CertificateResponse"}
+
+func (ec *executionContext) _CertificateResponse(ctx context.Context, sel ast.SelectionSet, obj *certificate.CertificateResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, certificateResponseImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CertificateResponse")
+		case "id":
+
+			out.Values[i] = ec._CertificateResponse_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "title":
+
+			out.Values[i] = ec._CertificateResponse_title(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "validUntil":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CertificateResponse_validUntil(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "url":
+
+			out.Values[i] = ec._CertificateResponse_url(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var iPRResponseImplementors = []string{"IPRResponse"}
 
@@ -3956,6 +4810,33 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteIPR(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createCertificate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createCertificate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateCertificate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCertificate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteCertificate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteCertificate(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -4126,6 +5007,52 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_iprs(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "certificate":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_certificate(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "certificates":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_certificates(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -4495,6 +5422,69 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCertificateResponse2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponse(ctx context.Context, sel ast.SelectionSet, v certificate.CertificateResponse) graphql.Marshaler {
+	return ec._CertificateResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCertificateResponse2ᚕᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponseᚄ(ctx context.Context, sel ast.SelectionSet, v []*certificate.CertificateResponse) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCertificateResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponse(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCertificateResponse2ᚖgithubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCertificateResponse(ctx context.Context, sel ast.SelectionSet, v *certificate.CertificateResponse) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CertificateResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateCertificateRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐCreateCertificateRequest(ctx context.Context, v interface{}) (certificate.CreateCertificateRequest, error) {
+	res, err := ec.unmarshalInputCreateCertificateRequest(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateIPRRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋiprᚐCreateIPRRequest(ctx context.Context, v interface{}) (ipr.CreateIPRRequest, error) {
 	res, err := ec.unmarshalInputCreateIPRRequest(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4681,6 +5671,32 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateCertificateRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋcertificateᚐUpdateCertificateRequest(ctx context.Context, v interface{}) (certificate.UpdateCertificateRequest, error) {
+	res, err := ec.unmarshalInputUpdateCertificateRequest(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateIPRRequest2githubᚗcomᚋrifkiystarkᚋportfoliosᚑapiᚋcmdᚋiprᚐUpdateIPRRequest(ctx context.Context, v interface{}) (ipr.UpdateIPRRequest, error) {

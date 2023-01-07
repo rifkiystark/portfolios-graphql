@@ -44,6 +44,7 @@ resolver:
 autobind:
     - "github.com/rifkiystark/portfolios-api/cmd/project"
     - "github.com/rifkiystark/portfolios-api/cmd/ipr"
+    - "github.com/rifkiystark/portfolios-api/cmd/certificate"
 
 # This section declares type mapping between the GraphQL and go type systems
 #

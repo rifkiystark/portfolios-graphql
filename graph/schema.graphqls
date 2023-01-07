@@ -49,6 +49,24 @@ type IPRResponse {
     url: String!
 }
 
+input CreateCertificateRequest {
+    title: String!
+    validUntil: Time!
+    url: String!
+}
+
+input UpdateCertificateRequest {
+    title: String
+    validUntil: Time
+}
+
+type CertificateResponse {
+    id: String!
+    title: String!
+    validUntil: Time!
+    url: String!
+}
+
 type Mutation {
     createProject(input: CreateProjectRequest!): ProjectResponse!
     updateProject(id: String!, input: UpdateProjectRequest!): ProjectResponse!
@@ -57,6 +75,13 @@ type Mutation {
     createIPR(input: CreateIPRRequest!): IPRResponse!
     updateIPR(id: String!, input: UpdateIPRRequest!): IPRResponse!
     deleteIPR(id: String!): IPRResponse!
+
+    createCertificate(input: CreateCertificateRequest!): CertificateResponse!
+    updateCertificate(
+        id: String!
+        input: UpdateCertificateRequest!
+    ): CertificateResponse!
+    deleteCertificate(id: String!): CertificateResponse!
 }
 
 type Query {
@@ -65,4 +90,7 @@ type Query {
 
     ipr(id: String!): IPRResponse!
     iprs(search: String): [IPRResponse!]!
+
+    certificate(id: String!): CertificateResponse!
+    certificates(search: String): [CertificateResponse!]!
 }

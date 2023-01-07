@@ -84,16 +84,16 @@ func (p *IPRServiceImpl) GetIPR(ctx context.Context, id string) (*IPRResponse, e
 }
 
 func (p *IPRServiceImpl) GetIPRs(ctx context.Context, search *string) ([]*IPRResponse, error) {
-	projectEntities, err := p.iprRepository.GetIPRs(search)
+	iprEntities, err := p.iprRepository.GetIPRs(search)
 	if err != nil {
 		return nil, err
 	}
 
-	var projects []*IPRResponse
-	for _, projectEntity := range projectEntities {
+	var iprs []*IPRResponse
+	for _, projectEntity := range iprEntities {
 		projectModel := projectEntity.ToResponse()
-		projects = append(projects, &projectModel)
+		iprs = append(iprs, &projectModel)
 	}
 
-	return projects, nil
+	return iprs, nil
 }

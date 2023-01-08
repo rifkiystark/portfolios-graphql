@@ -7,6 +7,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/rifkiystark/portfolios-api/cmd/certificate"
 	"github.com/rifkiystark/portfolios-api/cmd/ipr"
 	"github.com/rifkiystark/portfolios-api/cmd/project"
 	"github.com/rifkiystark/portfolios-api/config"
@@ -28,7 +29,21 @@ func main() {
 	iprRepository := ipr.NewRepository(db)
 	iprService := ipr.NewService(iprRepository, ik)
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{ProjectService: projectService, IPRService: iprService}}))
+	certificateRepository := certificate.NewRepository(db)
+	certificateService := certificate.NewService(certificateRepository, ik)
+
+	srv := handler.NewDefaultServer(
+		graph.NewExecutableSchema(
+			graph.Config{
+				Resolvers: &graph.Resolver{
+					ProjectService:     projectService,
+					IPRService:         iprService,
+					CertificateService: certificateService,
+				},
+			},
+		),
+	)
+
 	srv.AddTransport(transport.MultipartForm{
 		MaxMemory:     32 * mb,
 		MaxUploadSize: 50 * mb,

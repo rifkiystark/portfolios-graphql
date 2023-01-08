@@ -13,6 +13,7 @@ import (
 	"github.com/rifkiystark/portfolios-api/graph"
 	"github.com/rifkiystark/portfolios-api/internal/database"
 	"github.com/rifkiystark/portfolios-api/internal/imagekit"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -33,8 +34,14 @@ func main() {
 		MaxUploadSize: 50 * mb,
 	})
 
+	c := cors.New(cors.Options{
+		AllowCredentials: true,
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+	})
+
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	http.Handle("/query", c.Handler(srv))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", cfg.HTTPPort)
 	log.Fatal(http.ListenAndServe(":"+cfg.HTTPPort, nil))
